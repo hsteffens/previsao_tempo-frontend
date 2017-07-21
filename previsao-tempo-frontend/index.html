@@ -1,0 +1,364 @@
+<html>
+<head>
+
+  <title>Previsão tempo</title>
+
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1, user-scalable=no">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+
+  <script src="bower_components/webcomponentsjs/webcomponents-lite.js"></script>
+
+  <link rel="import" href="bower_components/polymer/polymer.html">
+  <link rel="import" href="bower_components/iron-flex-layout/iron-flex-layout.html">
+  <link rel="import" href="bower_components/iron-ajax/iron-ajax.html">
+  <link rel="import" href="bower_components/iron-list/iron-list.html">
+  <link rel="import" href="bower_components/paper-badge/paper-badge.html">
+  <link rel="import" href="bower_components/paper-item/paper-item.html">
+  <link rel="import" href="bower_components/paper-styles/color.html">
+  <link rel="import" href="bower_components/paper-styles/typography.html">
+  <link rel="import" href="bower_components/iron-icon/iron-icon.html">
+  <link rel="import" href="bower_components/paper-icon-button/paper-icon-button.html">
+  <link rel="import" href="bower_components/iron-icons/iron-icons.html">
+  <link rel="import" href="bower_components/app-layout/app-drawer/app-drawer.html">
+  <link rel="import" href="bower_components/app-layout/app-drawer-layout/app-drawer-layout.html">
+  <link rel="import" href="bower_components/app-layout/app-toolbar/app-toolbar.html">
+  <link rel="import" href="bower_components/paper-button/paper-button.html">
+  <link rel="import" href="bower_components/neon-animation/web-animations.html">
+  <link rel="import" href="bower_components/neon-animation/animations/scale-up-animation.html">
+  <link rel="import" href="bower_components/neon-animation/animations/fade-out-animation.html">
+  <link rel="import" href="bower_components/paper-dialog/paper-dialog.html">
+  <link rel="import" href="bower_components/paper-input/paper-input.html">
+  <link rel="import" href="bower_components/paper-toast/paper-toast.html">
+</head>
+<body unresolved>
+
+  <dom-module id="x-list">
+    <template>
+      <style>
+      :host {
+        display: block;
+        @apply --paper-font-common-base;
+        font-family: sans-serif;
+      }
+      .content {
+        @apply --layout-vertical;
+        height: 100%;
+      }
+      .white-toolbar {
+        background: white;
+        color: #333;
+      }
+      .blue-toolbar {
+        background: var(--paper-blue-500);
+        color: white;
+      }
+      app-toolbar {
+        box-shadow: 0 2px 5px 0 rgba(0, 0, 0, 0.3);
+        font-size: 18px;
+      }
+      app-drawer {
+        text-align: left;
+        border-left: 1px solid #ccc;
+      }
+      app-toolbar paper-icon-button {
+        --paper-icon-button-ink-color: white;
+      }
+      paper-badge {
+        margin-top: 5px;
+      }
+      paper-badge[label="0"] {
+        opacity: 0;
+      }
+      @media (min-width: 640px) {
+        paper-badge {
+          display: none;
+        }
+      }
+
+      .centered {
+  min-width: 500px;
+}
+demo-snippet {
+  --demo-snippet-code: {
+    max-height: 250px;
+  }
+}
+      #itemsList,
+      #selectedItemsList {
+        @apply --layout-flex;
+      }
+      .item {
+        @apply --layout-horizontal;
+        cursor: pointer;
+        padding: 16px 22px;
+        border-bottom: 1px solid #DDD;
+      }
+      .item:focus,
+      .item.selected:focus {
+        outline: 0;
+        background-color: #ddd;
+      }
+      .item.selected .star {
+        color: var(--paper-blue-600);
+      }
+      .pad {
+        @apply --layout-flex;
+        @apply --layout-vertical;
+        padding: 0 16px;
+      }
+      .primary {
+        font-size: 16px;
+      }
+      .secondary {
+        font-size: 14px;
+      }
+      .dim {
+        color: gray;
+      }
+      .star {
+        width: 24px;
+        height: 24px;
+      }
+      paper-item {
+        white-space: nowrap;
+        cursor: pointer;
+      }
+      paper-item:hover::after {
+        content: "－";
+        width: 16px;
+        height: 16px;
+        display: block;
+        border-radius: 50% 50%;
+        background-color: var(--google-red-300);
+        margin-left: 10px;
+        line-height: 16px;
+        text-align: center;
+        color: white;
+        font-weight: bold;
+        text-decoration: none;
+        position: absolute;
+        right: 15px;
+        top: calc(50% - 8px);
+      }
+      .no-selection {
+        color: #999;
+        margin-left: 10px;
+        line-height: 50px;
+      }
+      iron-list {
+        @apply --layout-flex;
+      }
+
+      </style>
+      <iron-ajax id="ajax" url="http://localhost:8080/previsao_tempo-backend/api/user/city"
+        last-response="{{items}}" auto
+        on-response="_onResponse"
+        headers='{{headers}}'
+        handle-as="json"></iron-ajax>
+
+      <app-drawer-layout fullbleed>
+          <div class="content">
+            <app-toolbar class="blue-toolbar">
+              <div main-title>Previsão do tempo</div>
+              <div>
+                <paper-button raised on-click="open">Add</paper-button>
+                <paper-button raised class="indigo" on-click="editar">Visualizar</paper-button>
+              </div>
+            </app-toolbar>
+
+            <paper-dialog id="dialog">
+              <paper-input id="inputname" bind-value= "{{name}}" label="Name" maxlength="45" required>Nome da Cidade</paper-input>
+              <div id="previsao">
+                <div main-title>Previsão do tempo</div>
+                  <div style="float: left;width:auto;">
+                    <div style="float: left;width:auto;">
+                      <paper-input id="inputweather1" maxlength="45"></paper-input>
+                      <paper-input id="inputcity1" maxlength="45"></paper-input>
+                    </div>
+                    <div style="float: left;width:auto;">
+                      <paper-input id="inputweather2" maxlength="45"></paper-input>
+                      <paper-input id="inputcity2" maxlength="45"></paper-input>
+                    </div>
+                    <div style="float: left;width:auto;">
+                      <paper-input id="inputweather3" maxlength="45"></paper-input>
+                      <paper-input id="inputcity3" maxlength="45"></paper-input>
+                    </div>
+                    <div style="float: left;width:auto;">
+                      <paper-input id="inputweather4" maxlength="45"></paper-input>
+                      <paper-input id="inputcity4" maxlength="45"></paper-input>
+                    </div>
+                    <div style="float: left;width:auto;">
+                      <paper-input id="inputweather5" maxlength="45"></paper-input>
+                      <paper-input id="inputcity5" maxlength="45"></paper-input>
+                    </div>
+                  </div>
+                </div>
+              <div id="but" class="buttons">
+                <paper-button dialog-dismiss>Cancel</paper-button>
+                <paper-button on-click="create" autofocus>Confirm</paper-button>
+              </div>
+            </paper-dialog>
+
+        <iron-list id="itemsList" selected-items="{{selectedItems}}"
+                    selection-enabled items="[[items.result]]" as="item"
+                    on-selected-item-changed="itemChanged">
+          <template>
+              <div>
+                <div tabindex$="[[tabIndex]]" aria-label$="Select/Deselect [[item.id]]" class$="[[_computedClass(selected)]]">
+                  <div class="pad">
+                    <b>[[item.id]] - [[item.name]] - Country: [[item.country]]</b>
+                    <p>Coordenadas</p>
+                    <p>Longitude: [[item.longitude]] - Latitude: [[item.latitude]]</p>
+                  </div>
+                </div>
+                <div class="border"></div>
+              </div>
+          </template>
+        </iron-list>
+        <app-drawer slot="drawer" align="right">
+          <div class="content">
+            <app-toolbar class="white-toolbar">
+              <div main-title>[[_getFormattedCount(selectedItems.length)]] Selected contacts</div>
+            </app-toolbar>
+            <iron-list id="selectedItemsList" items="[[selectedItems]]" hidden$="[[!selectedItems.length]]">
+              <template>
+                <paper-item tabindex$="[[tabIndex]]" on-tap="_unselect" aria-label$="Deselect [[item.name]]">[[item.name]]</paper-item>
+              </template>
+            </iron-list>
+          </div>
+        </app-drawer>
+      </app-drawer-layout>
+      <paper-toast id="errorMessage" duration="0" text="&Eacute; obrig&aacute;torio informar o nome da cidade!">
+                 <paper-button onclick="errorMessage.toggle()" class="yellow-button">Close now!</paper-button>
+      </paper-toast>
+      <paper-toast id="notSelection" duration="0" text="&Eacute; obrig&aacute;torio selecionar uma cidade!">
+                 <paper-button onclick="notSelection.toggle()" class="yellow-button">Close now!</paper-button>
+      </paper-toast>
+    </template>
+    <script>
+          HTMLImports.whenReady(function() {
+            Polymer({
+              is: 'x-list',
+              properties: {
+                selectedItems: {
+                  type: Object
+                },
+                headers: {
+                  type: Object,
+                  computed: 'getHeaders()'
+                }
+              },
+              getHeaders: function(customHeader) {
+                return {'Authorization': 'eb8b1a9405e659b2ffc78f0a520b1a46'}
+              },
+              _computedClass: function(isSelected) {
+                var classes = 'item';
+                if (isSelected) {
+                  classes += ' selected';
+                }
+                return classes;
+              },
+              _unselect: function(e) {
+                this.$.itemsList.deselectItem(e.model.item);
+              },
+              _getFormattedCount: function(count) {
+                return count > 0 ? '(' + count + ')' : '';
+              },
+              create: function () {
+                this.$.inputname.validate();
+                if(this.$.inputname.invalid){
+                  this.$.errorMessage.open();
+                  return;
+                }
+                this.$.dialog.toggle();
+                var selected= this.selectedItems;
+                if (selected === undefined || selected === null) {
+                  var url = "http://localhost:8080/previsao_tempo-backend/api/user/city";
+                  var task_service = new XMLHttpRequest();
+                  task_service.open("POST", url, true);
+                  task_service.setRequestHeader("Content-Type", "application/json");
+                  task_service.setRequestHeader("Authorization", "eb8b1a9405e659b2ffc78f0a520b1a46");
+                  task_service.onreadystatechange = function() {}
+                  task_service.send(JSON.stringify({name:this.$.inputname.value}));
+                  this.$.inputname.value = "";
+                }
+              },
+              _updateData: function() {
+                this.async(function() {
+                  this.$.ajax.generateRequest();
+                }, 15000);
+              },
+              _onResponse: function() {
+                console.log('received response');
+                this._updateData();
+              },
+              itemChanged: function(){
+                  if (this.$.itemsList.selectedItem === null) {
+                      this.async(function(){
+                          if (this.$.itemsList.selectedItem === null) {
+                              this.$.itemsList.selectItem(this.selectedItems);
+                          }
+                      }.bind(this));
+                  } else {
+                      this.selectedItems = this.$.itemsList.selectedItem;
+                      var conditional = document.querySelector('dom-if');
+                      conditional.if = true;
+                  }
+              },
+              open: function () {
+                this.$.but.style="";
+                this.$.previsao.style="display: none;";
+                this.$.dialog.open();
+              },
+              editar: function () {
+                if (this.selectedItems === undefined || this.selectedItems === null) {
+                    this.$.notSelection.open();
+                    return;
+                }
+                this.$.inputname.value = this.selectedItems.name;
+                this.$.but.style="display: none;";
+                this.$.previsao.style="";
+                var city1;
+                var city2;
+                var city3;
+                var city4;
+                var city5;
+                var url = "http://api.openweathermap.org/data/2.5/forecast?q="+this.selectedItems.name+"&APPID=a0ef19a8b0b989d05fcc6e4e016d5d8f&cnt=5";
+                var task_service = new XMLHttpRequest();
+                task_service.open("GET", url, false);
+                task_service.onreadystatechange = function() {
+                  if (task_service.status == "200") {
+                      var object = JSON.parse(task_service.responseText);
+                      city1 = object.list[0];
+                      city2 = object.list[1];
+                      city3 = object.list[2];
+                      city4 = object.list[3];
+                      city5 = object.list[4];
+                  }
+                }
+                task_service.send(JSON.stringify({name:this.$.inputname.value}));
+                this.$.inputweather1.value = city1.weather[0].description;
+                this.$.inputcity1.value = city1.dt_txt;
+                this.$.inputweather2.value = city2.weather[0].description;
+                this.$.inputcity2.value = city2.dt_txt;
+                this.$.inputweather3.value = city3.weather[0].description;
+                this.$.inputcity3.value = city3.dt_txt;
+                this.$.inputweather4.value = city4.weather[0].description;
+                this.$.inputcity4.value = city4.dt_txt;
+                this.$.inputweather5.value = city5.weather[0].description;
+                this.$.inputcity5.value = city5.dt_txt;
+
+                this.$.dialog.open();
+              }
+            });
+         });
+        </script>
+      </dom-module>
+
+
+  <x-list></x-list>
+
+</body>
+</html>
